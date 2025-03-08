@@ -1,6 +1,9 @@
 import tensorflow as tf
 import numpy as np
 import cv2
+import requests
+from io import BytesIO
+from PIL import Image
 
 
 interpreter = tf.lite.Interpreter(model_path="stress_model.tflite")
@@ -23,7 +26,22 @@ def stress_predictor(img):
     output_data = interpreter.get_tensor(output_details[0]['index'])
     predicted_class = np.argmax(output_data)
 
-    return predicted_class, output_data
+    return output_data[0][0]
+
+
+def read_image_from_url(url):
+    response = requests.get(url)
+    response.raise_for_status()
+
+    img = Image.open(BytesIO(response.content)).convert('RGB')
+    img = np.array(img)
+
+    if img is None or img.size == 0:
+        raise ValueError("Failed to load image from URL.")
+
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+    return img
 
 
 if __name__ == "__main__":
