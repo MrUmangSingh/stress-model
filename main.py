@@ -1,31 +1,28 @@
-import tensorflow as tf
+from fastapi import FastAPI
+import uvicorn
+from fastapi.responses import JSONResponse
+from stress_predictor import stress_predictor
 import numpy as np
-import cv2
+
+app = FastAPI()
 
 
-interpreter = tf.lite.Interpreter(model_path="stress_model.tflite")
-interpreter.allocate_tensors()
+@app.post("/predict")
+async def predict_stress(image: list):
+    try:
+        # Convert input list to NumPy array
+        img = np.array(image, dtype=np.uint8)
 
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+        # Predict stress level
+        predicted_class, output_data = stress_predictor(img)
 
+        return JSONResponse(content={
+            "predicted_class": predicted_class,
+            "output_data": output_data
+        })
 
-def stress_predictor(image_path):
-    img = cv2.imread(image_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img, (224, 224))
-    img = img.astype(np.float32) / 255.0
-    img = np.expand_dims(img, axis=0)
-
-    interpreter.set_tensor(input_details[0]['index'], img)
-    interpreter.invoke()
-
-    output_data = interpreter.get_tensor(output_details[0]['index'])
-    predicted_class = np.argmax(output_data)
-
-    return predicted_class, output_data
-
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 if __name__ == "__main__":
-    a, b = stress_predictor("test.jpg")
-    print(b)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
