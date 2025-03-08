@@ -9,18 +9,23 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-image_path = "test.jpg"
-img = cv2.imread(image_path)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-img = cv2.resize(img, (224, 224))
-img = img.astype(np.float32) / 255.0
-img = np.expand_dims(img, axis=0)
 
-interpreter.set_tensor(input_details[0]['index'], img)
-interpreter.invoke()
+def stress_predictor(image_path):
+    img = cv2.imread(image_path)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, (224, 224))
+    img = img.astype(np.float32) / 255.0
+    img = np.expand_dims(img, axis=0)
 
-output_data = interpreter.get_tensor(output_details[0]['index'])
-predicted_class = np.argmax(output_data)
+    interpreter.set_tensor(input_details[0]['index'], img)
+    interpreter.invoke()
 
-print("Predicted class: ", predicted_class)
-print("Output data: ", output_data)
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    predicted_class = np.argmax(output_data)
+
+    return predicted_class, output_data
+
+
+if __name__ == "__main__":
+    a, b = stress_predictor("test.jpg")
+    print(b)
